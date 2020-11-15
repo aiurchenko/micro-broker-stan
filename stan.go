@@ -326,26 +326,27 @@ func (n *stanBroker) Subscribe(topic string, handler broker.Handler, opts ...bro
 	}
 
 	fn := func(msg *stan.Msg) {
-		m := &broker.Message{}
-		pub := &publication{t: msg.Subject}
+		pub := &publication{t: msg.Subject, m: &broker.Message{}}
 
 		eh := n.opts.ErrorHandler
 		if opt.ErrorHandler != nil {
 			eh = opt.ErrorHandler
 		}
-		err := n.opts.Codec.Unmarshal(msg.Data, &m)
-		pub.err = err
-		pub.m = m
-		if err != nil {
+		if bVal, ok := ctx.Value(rawMessage{}).(bool); ok && bVal {
 			pub.m.Body = msg.Data
-			if eh != nil {
-				eh(pub)
-			} else {
-				if logger.V(logger.ErrorLevel) {
-					logger.Error(err)
+		} else {
+			if err := n.opts.Codec.Unmarshal(msg.Data, &pub.m); err != nil {
+				pub.m.Body = msg.Data
+				pub.err = err
+				if eh != nil {
+					eh(pub)
+				} else {
+					if logger.V(logger.ErrorLevel) {
+						logger.Error(err)
+					}
 				}
+				return
 			}
-			return
 		}
 		if err := handler(pub); err != nil {
 			pub.err = err

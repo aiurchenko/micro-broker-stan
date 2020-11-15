@@ -54,6 +54,13 @@ func AckOnSuccess() broker.SubscribeOption {
 	return setSubscribeOption(ackSuccessKey{}, true)
 }
 
+type rawMessage struct{}
+
+// RawMessage allows to receive messages that do not match the broker.Message struct
+func RawMessage() broker.SubscribeOption {
+	return setSubscribeOption(rawMessage{}, true)
+}
+
 type connectTimeoutKey struct{}
 
 // ConnectTimeout timeout for connecting to broker -1 infinitive or time.Duration value
